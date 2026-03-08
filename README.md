@@ -1,43 +1,45 @@
 # Sistema de Compra Programada de Ações
 
-Este projeto implementa um **protótipo de um sistema de compra programada de ações**, inspirado em produtos reais de corretoras.
-O objetivo é simular como um grupo de clientes pode investir mensalmente em uma carteira recomendada (Top Five), realizando compras automáticas, distribuindo os ativos proporcionalmente e mantendo controle de custódia, preço médio e eventos fiscais.
+## Visão Geral
 
-O projeto foi desenvolvido utilizando **.NET**, **MySQL**, **Kafka** e **Docker**, seguindo boas práticas de organização de código, separação de responsabilidades e arquitetura em camadas.
+Este projeto implementa um **protótipo de um sistema de compra programada de ações**, inspirado em produtos oferecidos por corretoras de investimento.
 
----
+A ideia central é permitir que diversos clientes invistam mensalmente em uma **carteira recomendada de ações**, realizando compras automáticas em datas pré-definidas e distribuindo os ativos proporcionalmente entre os participantes.
 
-# Objetivo do Projeto
+O sistema simula várias regras de negócio presentes em plataformas financeiras, como:
 
-O sistema permite que vários clientes realizem **aportes mensais programados** em uma carteira recomendada de ações.
+* compras consolidadas
+* distribuição proporcional de ativos
+* controle de custódia
+* cálculo de preço médio
+* geração de eventos fiscais
+* integração com mensageria (Kafka)
 
-O funcionamento básico é:
-
-1. Clientes aderem ao produto informando seus dados e valor de aporte mensal.
-2. Existe uma **cesta de ações recomendadas (Top Five)** com percentuais definidos.
-3. Em datas específicas do mês, o sistema executa automaticamente uma compra consolidada.
-4. As ações compradas são distribuídas proporcionalmente entre os clientes.
-5. Sobras (resíduos) ficam armazenadas em uma custódia master para uso em compras futuras.
-6. O sistema mantém o **preço médio por ativo por cliente**.
-7. Eventos fiscais são publicados em **Kafka** para processamento posterior.
+Este projeto foi desenvolvido como um **exercício técnico de arquitetura e regras de negócio**, focando na clareza da implementação e na separação de responsabilidades.
 
 ---
 
 # Tecnologias Utilizadas
 
+O projeto foi desenvolvido utilizando as seguintes tecnologias:
+
 * **.NET 8**
-* **ASP.NET Web API**
+* **ASP.NET Core Web API**
 * **Entity Framework Core**
 * **MySQL**
-* **Kafka**
+* **Apache Kafka**
 * **Docker**
-* **Swagger (OpenAPI)**
+* **Swagger / OpenAPI**
+
+Essas tecnologias foram escolhidas por serem amplamente utilizadas em sistemas corporativos e por oferecerem boa integração entre si.
 
 ---
 
-# Estrutura do Projeto
+# Arquitetura Utilizada
 
-O projeto foi organizado em uma arquitetura em camadas para manter o código limpo e de fácil manutenção.
+O sistema foi estruturado utilizando uma **arquitetura em camadas**, com separação clara de responsabilidades entre os componentes.
+
+Estrutura do projeto:
 
 ```
 src
@@ -48,6 +50,7 @@ src
 │
 ├─ CompraProg.Application
 │   Helpers
+│   Regras auxiliares
 │
 ├─ CompraProg.Domain
 │   Entidades de domínio
@@ -58,67 +61,344 @@ src
     Messaging
 ```
 
-Cada camada possui uma responsabilidade clara:
+### Responsabilidade de cada camada
 
-| Camada         | Responsabilidade                    |
-| -------------- | ----------------------------------- |
-| Api            | Exposição dos endpoints HTTP        |
-| Application    | Regras auxiliares e cálculos        |
-| Domain         | Modelos de negócio                  |
-| Infrastructure | Banco de dados, Kafka e integrações |
+**Api**
 
----
+Responsável por expor os endpoints HTTP e receber requisições externas.
 
-# Etapas Implementadas Até Agora
+Contém:
 
-## 1. Estrutura Inicial da API
-
-Foi criada uma API utilizando **ASP.NET Core**, com suporte a Swagger para facilitar os testes.
-
-O projeto foi dividido em camadas para seguir boas práticas de arquitetura.
+* Controllers
+* configuração da aplicação
+* integração com Swagger
 
 ---
 
-# 2. Cadastro de Clientes
+**Application**
 
-Foi criado um endpoint para permitir que um cliente entre no sistema.
+Contém regras auxiliares de negócio e cálculos reutilizáveis, como:
 
-### Endpoint
+* cálculo de preço médio
+* distribuição proporcional
+* utilitários do motor
+
+---
+
+**Domain**
+
+Representa os conceitos principais do sistema.
+
+Inclui entidades como:
+
+* Cliente
+* Cesta de investimentos
+* Itens da cesta
+
+---
+
+**Infrastructure**
+
+Camada responsável por integração com recursos externos:
+
+* banco de dados (Entity Framework)
+* Kafka
+* serviços de custódia
+* persistência
+
+---
+
+# Decisões Técnicas
+
+## 1. Separação em Camadas
+
+A arquitetura em camadas foi adotada para facilitar:
+
+* manutenção do código
+* evolução do sistema
+* testes
+* reutilização de regras de negócio
+
+Essa separação também evita que regras importantes fiquem diretamente dentro de controllers.
+
+---
+
+## 2. Uso do Entity Framework Core
+
+O EF Core foi escolhido para simplificar:
+
+* acesso ao banco
+* mapeamento objeto-relacional
+* migrations de banco de dados
+
+Isso permite evoluir o schema do banco de forma controlada.
+
+---
+
+## 3. Banco de Dados MySQL
+
+O MySQL foi escolhido por:
+
+* simplicidade de configuração
+* ampla adoção em aplicações corporativas
+* boa integração com Docker
+
+---
+
+## 4. Uso de Kafka para eventos fiscais
+
+O sistema publica eventos fiscais no Kafka para simular integração com outros serviços.
+
+Eventos publicados incluem:
+
+* IR dedo-duro de operações de compra
+
+Esse padrão segue uma arquitetura orientada a eventos.
+
+---
+
+## 5. Importação de Cotações via COTAHIST
+
+Os preços das ações são importados a partir do arquivo oficial da B3:
+
+```
+COTAHIST
+```
+
+Esse arquivo possui layout posicional fixo.
+
+Durante a importação o sistema:
+
+* lê cada linha
+* extrai os campos necessários
+* converte valores
+* grava no banco
+
+Apenas mercados relevantes são importados.
+
+---
+
+# Funcionalidades Implementadas
+
+Até o momento o sistema possui as seguintes funcionalidades.
+
+---
+
+## Cadastro de Clientes
+
+Permite que um cliente adira ao produto de compra programada.
+
+Endpoint:
 
 ```
 POST /api/clientes/adesao
 ```
 
-### Dados necessários
+Dados solicitados:
 
 * Nome
 * CPF
 * Email
-* Valor mensal de aporte
+* Valor mensal de investimento
 
 Regras aplicadas:
 
 * CPF deve ser único
-* Valor mínimo de investimento validado
-* Cliente inicia com status ativo
+* valor mínimo de investimento validado
+* cliente inicia ativo
 
-Durante a adesão também é criada automaticamente uma **custódia filhote** para o cliente.
+Durante a adesão também é criada automaticamente uma **custódia filhote**.
 
 ---
 
-# 3. Cesta de Investimento (Top Five)
+# Cesta de Investimento (Top Five)
 
-Foi implementado um endpoint administrativo para cadastrar a carteira recomendada.
+Existe uma carteira recomendada composta por 5 ações.
 
-### Endpoint
+Endpoint administrativo:
 
 ```
 POST /api/admin/cesta
 ```
 
-A cesta precisa conter:
+Regras:
 
-* exatamente **5 ativos**
-* percentuais que somem **100%**
+* exatamente 5 ativos
+* soma dos percentuais = 100%
+* apenas uma cesta ativa por vez
 
-Quando uma nova
+Quando uma nova cesta é criada, a anterior é automaticamente desativada.
+
+---
+
+# Importação de Cotações
+
+Endpoint:
+
+```
+POST /api/cotacoes/importar-cotahist
+```
+
+O endpoint recebe um arquivo TXT do COTAHIST e realiza:
+
+* leitura das linhas
+* parsing do layout
+* extração de ticker e preço de fechamento
+
+persistência no banco
+
+Durante a importação são contabilizados:
+
+linhas lidas
+
+linhas parseadas
+
+linhas inseridas
+
+linhas ignoradas
+
+Motor de Compra Programada
+
+O motor executa as compras consolidadas.
+
+Endpoint:
+
+POST /api/motor/executar-compra
+
+Fluxo executado:
+
+busca clientes ativos
+
+calcula valor consolidado de investimento
+
+calcula quantas ações comprar de cada ativo
+
+verifica saldo na custódia master
+
+determina quantidade real a comprar
+
+Estrutura de Custódia
+
+O sistema implementa dois tipos de custódia.
+
+Custódia Master
+
+Responsável por:
+
+centralizar as compras
+
+armazenar resíduos
+
+Custódia Filhote
+
+Cada cliente possui sua própria custódia.
+
+Ela contém:
+
+posições por ativo
+
+quantidade
+
+preço médio
+
+Distribuição Proporcional
+
+Após a compra consolidada, os ativos são distribuídos proporcionalmente entre os clientes.
+
+Cálculo utilizado:
+
+quantidadeCliente = floor(quantidadeTotal * proporcaoCliente)
+
+As sobras são mantidas na custódia master como resíduos.
+
+Cálculo de Preço Médio
+
+O preço médio é atualizado somente em compras.
+
+Fórmula utilizada:
+
+PM = (QtdAnterior * PMAnterior + QtdNova * PrecoCompra) / (QtdAnterior + QtdNova)
+
+Esse valor é mantido por ativo em cada custódia filhote.
+
+Integração com Kafka
+
+Após cada distribuição de ativo, o sistema publica um evento no Kafka.
+
+Estrutura do evento:
+
+clienteId
+
+cpf
+
+ticker
+
+quantidade
+
+preço unitário
+
+valor da operação
+
+valor do imposto
+
+Esse evento simula o envio de informações fiscais para outro sistema.
+
+Como Rodar o Projeto
+1. Clonar o repositório
+git clone https://github.com/seu-usuario/compra-programada-acoes.git
+2. Subir o banco de dados
+
+Exemplo com Docker:
+
+docker run -p 3306:3306 -e MYSQL_ROOT_PASSWORD=root mysql
+3. Subir o Kafka
+
+Exemplo simplificado:
+
+docker run -p 9092:9092 apache/kafka
+4. Executar a aplicação
+
+Abrir a solução no Visual Studio e executar:
+
+Start Debugging
+5. Acessar Swagger
+
+Após iniciar a aplicação:
+
+https://localhost:xxxx/swagger
+
+No Swagger é possível:
+
+cadastrar clientes
+
+criar cesta
+
+importar cotação
+
+executar motor
+
+Próximos Passos do Projeto
+
+Algumas funcionalidades ainda estão planejadas:
+
+rebalanceamento da carteira quando a cesta mudar
+
+IR sobre vendas
+
+tela de rentabilidade
+
+histórico completo de operações
+
+controle de execução duplicada do motor
+
+Considerações Finais
+
+O sistema foi desenvolvido de forma incremental, priorizando:
+
+clareza nas regras de negócio
+
+separação de responsabilidades
+
+facilidade de evolução
+
+A arquitetura escolhida permite expandir o projeto com novos serviços ou integrações de forma organizada.
