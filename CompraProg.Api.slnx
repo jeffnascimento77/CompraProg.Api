@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="CompraProg-Application/CompraProg.Application.csproj" />
+  <Project Path="CompraProg-Infrastructure/CompraProg.Infrastructure.csproj" />
+  <Project Path="CompraProg.Api/CompraProg.Api.csproj" />
+  <Project Path="CompraProg.Domain/CompraProg.Domain.csproj" />
+</Solution>
